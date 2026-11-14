@@ -89,6 +89,44 @@ jobs:
             exit 1
           fi
 
+      - name: Export ARM64-only diagnostic APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /github/home/.android/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp export_presets.cfg /tmp/export_presets-universal.cfg
+          restore_preset() { cp /tmp/export_presets-universal.cfg export_presets.cfg; }
+          trap restore_preset EXIT
+          sed -i \
+            -e 's/^architectures\/armeabi-v7a=true$/architectures\/armeabi-v7a=false/' \
+            -e 's/^architectures\/x86=true$/architectures\/x86=false/' \
+            -e 's/^architectures\/x86_64=true$/architectures\/x86_64=false/' \
+            export_presets.cfg
+          godot --headless --verbose --path . --export-debug "Android" build/FOOD-DASH-arm64.apk 2>&1 | tee build/export-arm64.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" build/export-arm64.log; then
+            echo "Godot script validation failed; refusing to publish the ARM64 APK."
+            exit 1
+          fi
+          restore_preset
+          trap - EXIT
+
+      - name: Verify ARM64 diagnostic APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="build/FOOD-DASH-arm64.apk"
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -v 4 "$APK"
+          unzip -Z1 "$APK" > build/arm64-apk-files.txt
+          grep -Fxq "lib/arm64-v8a/libgodot_android.so" build/arm64-apk-files.txt
+          ! grep -Eq '^lib/(armeabi-v7a|x86|x86_64)/' build/arm64-apk-files.txt
+          sha256sum "$APK" | tee build/arm64-apk-sha256.txt
+
       - name: Verify APK package, signature and universal ABI payload
         shell: bash
         run: |
@@ -114,7 +152,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FOOD-DASH-Android-UNIVERSAL
-          path: build/FOOD-DASH-universal.apk
+          name: FOOD-DASH-Android-TEST-BUILDS
+          path: |
+            build/FOOD-DASH-universal.apk
+            build/FOOD-DASH-arm64.apk
           if-no-files-found: error
           retention-days: 14
