@@ -93,7 +93,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="build/FOOD-DASH-arm64.apk"
+          APK="build/FOOD-DASH-universal.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
@@ -115,6 +115,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FOOD-DASH-Android-UNIVERSAL
-          path: build/FOOD-DASH-arm64.apk
+          path: build/FOOD-DASH-universal.apk
           if-no-files-found: error
           retention-days: 14
