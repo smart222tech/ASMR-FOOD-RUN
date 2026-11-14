@@ -1,6 +1,6 @@
-# Build a clean ARM64-only package for modern Samsung phones.
+# Build a clean universal ARM64 and x86_64 package for modern Samsung phones.
 name: Build FOOD DASH Android APK
-# Android export is ARM64-only to reduce APK size and avoid irrelevant ABIs.
+# Android export is ARM64 and x86_64 so modern phones and emulator-compatible devices are covered.
 
 on:
   workflow_dispatch:
@@ -89,7 +89,7 @@ jobs:
             exit 1
           fi
 
-      - name: Verify APK package, signature and ARM64 payload
+      - name: Verify APK package, signature and universal ABI payload
         shell: bash
         run: |
           set -euo pipefail
@@ -108,7 +108,7 @@ jobs:
           sha256sum "$APK" | tee build/apk-sha256.txt
           grep -Fxq "lib/arm64-v8a/libgodot_android.so" build/apk-files.txt
           if grep -E "^lib/(armeabi-v7a|x86_64)/libgodot_android\.so$" build/apk-files.txt; then
-            echo "Unexpected non-ARM64 native library found."
+            echo "Unexpected unsupported native library found."
             exit 1
           fi
 
