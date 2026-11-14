@@ -97,9 +97,15 @@ jobs:
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
-          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" > build/apk-badging.txt
+          "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | tee build/apk-badging.txt
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > build/AndroidManifest.txt
           grep -Fq "package: name='com.smart222tech.fooddash'" build/apk-badging.txt
+          grep -Eq "sdkVersion:'[0-9]+'" build/apk-badging.txt
+          grep -Eq "targetSdkVersion:'[0-9]+'" build/apk-badging.txt
+          grep -Fq "launchable-activity:" build/apk-badging.txt
           unzip -Z1 "$APK" > build/apk-files.txt
+          sha256sum "$APK" | tee build/apk-sha256.txt
           grep -Fxq "lib/arm64-v8a/libgodot_android.so" build/apk-files.txt
           if grep -E "^lib/(armeabi-v7a|x86_64)/libgodot_android\.so$" build/apk-files.txt; then
             echo "Unexpected non-ARM64 native library found."
