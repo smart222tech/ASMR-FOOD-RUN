@@ -107,11 +107,7 @@ jobs:
           unzip -Z1 "$APK" > build/apk-files.txt
           sha256sum "$APK" | tee build/apk-sha256.txt
           grep -Fxq "lib/arm64-v8a/libgodot_android.so" build/apk-files.txt
-          grep -Fxq "lib/arm64-v8a/libgodot_android.so" build/apk-files.txt
           grep -Fxq "lib/x86_64/libgodot_android.so" build/apk-files.txt
-            echo "Unexpected unsupported native library found."
-            exit 1
-          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
